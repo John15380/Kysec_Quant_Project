@@ -12,28 +12,28 @@ class IdealAmplitudeFactor(BaseFactor):
     def _compute_logic(self, year: str) -> pl.LazyFrame:
         lf_base = self._get_clean_universe(year, require_intraday=False)
         
-        # 1. 计算每日振幅
+        # 【修改点 1】：生成连续的交易日整数索引 date_idx
         lf_calc = lf_base.with_columns([
-            (pl.col("high") / pl.col("low") - 1.0).alias("amp")
+            (pl.col("high") / pl.col("low") - 1.0).alias("amp"),
+            pl.col("trade_date").rank(method="dense").cast(pl.Int32).alias("date_idx")
         ]).drop_nulls(["close", "amp"])
 
-        # 2. 将数据打包成 Struct，以便在滚动窗口中关联排序
         lf_struct = lf_calc.with_columns([
             pl.struct(["close", "amp"]).alias("daily_data")
         ])
 
-        # 3. 核心大招：动态窗口分组 (Dynamic GroupBy)
-        # 按照交易日和股票进行 20 天的滑动窗口划分
+        # 【修改点 2】：依据 date_idx 滚动，周期改为 "20i"
         lf_roll = lf_struct.group_by_dynamic(
-            "trade_date", 
+            "date_idx",         # 改用整数索引
             by="symbol", 
-            every="1d", 
-            period="20d", 
+            every="1i",         # 1个交易日
+            period="20i",       # 真正的 20 个交易日
             closed="right"
         ).agg([
+            pl.col("trade_date").last(), # 必须保留真实的 trade_date 供输出使用
             pl.col("daily_data"),
             pl.len().alias("window_len")
-        ]).filter(pl.col("window_len") >= 20) # 剔除窗口不足20天的初期数据
+        ]).filter(pl.col("window_len") >= 20)
 
         # 4. 列表级解析 (list.eval)：全 Rust 环境内完成排序和切片
         lf_res = lf_roll.with_columns([

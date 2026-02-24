@@ -70,12 +70,12 @@ class ICIROptimizer:
         for i in range(n_periods):
             curr_date = dates[i]
             
-            # 如果历史数据不足 12 期，采用等权过渡
-            if i < self.rolling_window:
+            lag = 5  # fwd_ret_5d 的窗口长度
+            if i < self.rolling_window + lag:
                 w = np.ones(len(factor_cols)) / len(factor_cols)
             else:
-                # 截取过去 12 期的 IC 数据
-                hist_ic = ic_data[i - self.rolling_window : i, :]
+                # 在 i 日，只能使用 i-lag 之前已完全落地的 IC 数据
+                hist_ic = ic_data[i - self.rolling_window - lag : i - lag, :]
                 w = self._calc_optimal_weights(hist_ic)
                 
             # 保存日期和对应的权重字典

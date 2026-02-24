@@ -65,6 +65,7 @@ class Evaluator:
         # 月均换手率计算
         # 先把单边换手率转成 pandas，按月重采样求和
         df_turn = df_turnover.to_pandas().set_index("trade_date")
+        df_turn.index = pd.to_datetime(df_turn.index) # 增加此行确保索引是 datetime 类型
         # 乘以 2 因为研报可能计算的是单边，有些机构看双边，此处以单边累加计入月度
         monthly_turnover = df_turn.resample('M')['turnover'].sum().mean()
 

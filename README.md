@@ -165,7 +165,10 @@ Kysec_Quant_Project/
     * `volume`: 成交量（股），`int64`。
     * `amount`: 成交额（元），`float64`。
 * **数据示例**：
-    > `000001, 34200000000, 13.64, 13.64, 13.64, 13.64, 386500, 5271860`
+    ```csv
+    symbol,time,open,high,low,close,volume,amount
+    000001, 34200000000, 13.64, 13.64, 13.64, 13.64, 386500, 5271860
+    ```
 
 ### (6) 复权因子 / `adj_factor_YYYY.csv`
 * **示例数据**：
@@ -201,12 +204,18 @@ Kysec_Quant_Project/
     * `vol`: 成交量（手）。
     * `amount`: 成交额（千元）。
 * **示例数据**：
-    > `000001, 2013-01-04, 16.32, 16.45, 15.92, 15.99, 16.02, -0.03, -0.19, 443851.37, 717567.5466`
+    ```csv
+    symbol,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount
+    000001, 2013-01-04, 16.32, 16.45, 15.92, 15.99, 16.02, -0.03, -0.19, 443851.37, 717567.5466
+    ```
 
 ### (10) 沪深 300-60min / `000300_SH_60min_YYYY.parquet`
 * **字段说明**：包含 `close`, `open`, `high`, `low`, `trade_date`, `time` (`pd.timedelta` 格式)。
 * **示例数据**：
-    > `2423.97, 2423.97, 2423.97, 2423.97, 2013-12-02, 34200000000`
+    ```csv
+    close,open,high,low,trade_date,time
+    2423.97, 2423.97, 2423.97, 2423.97, 2013-12-02, 34200000000
+    ```
 
 ### (11) 涨跌停价 / `A_share_limit_YYYY.csv`
 * **示例数据**：
@@ -226,7 +235,7 @@ Kysec_Quant_Project/
     000004,2004-11-01,医药,CI005018.CI
     ```
 
-### (13) 资金流向 / `moneyflow_2013.parquet`
+### (13) 资金流向 / `moneyflow_YYYY.parquet`
 * **分类标准**（基于主动买卖单统计）：
     * **小单 (sm)**：5万以下。
     * **中单 (md)**：5万～20万。
@@ -238,5 +247,8 @@ Kysec_Quant_Project/
     * `sell_xx_vol` / `sell_xx_amount`: 卖出量/额。
     * `net_mf_vol` / `net_mf_amount`: 净流入量/额。
 * **示例数据**：
-    > `000001, 2013-01-04, 65214, 10520.61, 66792, 10793.5, 103994, 16796.95, 106840, 17280.15, 135227, 21890.92, 110032, 17804.94, 139242, 22520.2, 160013, 25850.099609375, -13017, -2059.68`
+    ```csv
+    symbol,trade_date,buy_sm_vol,buy_sm_amount,sell_sm_vol,sell_sm_amount,buy_md_vol,buy_md_amount,sell_md_vol,sell_md_amount,buy_lg_vol,buy_lg_amount,sell_lg_vol,sell_lg_amount,buy_elg_vol,buy_elg_amount,sell_elg_vol,sell_elg_amount,net_elg_vol,net_elg_amount
+    000001, 2013-01-04, 65214, 10520.61, 66792, 10793.5, 103994, 16796.95, 106840, 17280.15, 135227, 21890.92, 110032, 17804.94, 139242, 22520.2, 160013, 25850.1, -13017, -2059.68
+    ```
 

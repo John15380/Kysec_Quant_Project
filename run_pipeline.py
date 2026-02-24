@@ -44,7 +44,7 @@ def build_forward_returns(years: list[str]) -> pl.LazyFrame:
     # 计算 T 期的日收益率 (供组合引擎推演净值使用)
     # 计算 T+1 到 T+5 的未来 5 日收益率 (供计算周频 IC 使用)
     lf_ret = lf_master.with_columns([
-        (pl.col('close') / pl.col('close').shift(1).over('symbol') - 1.0).alias('daily_ret'),
+        (pl.col('close').shift(-1).over('symbol') / pl.col('close') - 1.0).alias('daily_ret'),
         (pl.col('close').shift(-5).over('symbol') / pl.col('close') - 1.0).alias('fwd_ret_5d')
     ])
     return lf_ret

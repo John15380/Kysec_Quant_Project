@@ -113,16 +113,23 @@ class APMFactor(BaseFactor):
         # 4. 合并数据，计算 Ret20（截面回归需要）
         lf_combined = lf_stock_ret.join(lf_idx_ret, on='trade_date', how='inner').join(lf_master, on=['symbol', 'trade_date'], how='left')
         
+        # 【修改点 1】：打上 date_idx 标签
         lf_combined = lf_combined.sort(["symbol", "trade_date"]).with_columns([
-            (pl.col("close") / pl.col("close").shift(20).over("symbol") - 1.0).alias("Ret20")
+            (pl.col("close") / pl.col("close").shift(20).over("symbol") - 1.0).alias("Ret20"),
+            pl.col("trade_date").rank(method="dense").cast(pl.Int32).alias("date_idx")
         ]).drop_nulls(['r_am', 'r_pm', 'R_am', 'R_pm'])
 
-        # 5. 滑动 20 天，打包成 Struct 执行 Numba 时序回归
+        # 【修改点 2】：使用 20i 进行动态聚合
         lf_roll = lf_combined.group_by_dynamic(
-            "trade_date", by="symbol", every="1d", period="20d", closed="right"
+            "date_idx", 
+            by="symbol", 
+            every="1i", 
+            period="20i", 
+            closed="right"
         ).agg([
+            pl.col("trade_date").last(), # 保留真实日期
             pl.col('r_am'), pl.col('r_pm'), pl.col('R_am'), pl.col('R_pm'),
-            pl.col('Ret20').last().alias('Ret20_current'), # 当前截面的 Ret20
+            pl.col('Ret20').last().alias('Ret20_current'),
             pl.col('trade_date').len().alias('valid_days')
         ]).filter(pl.col('valid_days') >= 15)
 

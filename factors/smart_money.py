@@ -117,12 +117,35 @@ class SmartMoneyFactor(BaseFactor):
             how='inner'
         )
         
+        # 【修改点 1】：在聚合为日级别前，确保分钟线按时间严格排序，防止 Numba 计算随机出错
+        lf_min_clean = lf_min_clean.sort(['symbol', 'trade_date', 'time'])
+
         # 3. 将单日的分钟序列合并打包成列表 (List)
         lf_daily = lf_min_clean.group_by(['symbol', 'trade_date']).agg([
             pl.col('close').alias('close_day'),
             pl.col('volume').alias('vol_day'),
             pl.col('amount').alias('amt_day')
         ]).sort(['symbol', 'trade_date'])
+
+        # 【修改点 2】：生成全局交易日索引 date_idx
+        lf_daily = lf_daily.with_columns([
+            pl.col("trade_date").rank(method="dense").cast(pl.Int32).alias("date_idx")
+        ])
+
+        # 【修改点 3】：按 10i (10个交易日) 进行动态滚动
+        lf_roll = lf_daily.group_by_dynamic(
+            "date_idx", 
+            by="symbol", 
+            every="1i", 
+            period="10i", 
+            closed="right"
+        ).agg([
+            pl.col("trade_date").last(), # 提取出真实的日期
+            pl.col("close_day").list.explode().alias("close_10d"),
+            pl.col("vol_day").list.explode().alias("vol_10d"),
+            pl.col("amt_day").list.explode().alias("amt_10d"),
+            pl.col("trade_date").len().alias("valid_days")
+        ]).filter(pl.col("valid_days") >= 5)
 
         # 4. 极致性能：动态窗口聚合 (Dynamic GroupBy)
         # 按照 10 天为一个滑动窗口 ，把过去 10 天每天的分钟数据拼装起来
